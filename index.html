@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Model Parçalara Ayırma Rehberi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@300;400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0e0e12;
+    --surface: #16161e;
+    --surface2: #1e1e2a;
+    --border: #2a2a3a;
+    --accent-b: #4f8ef7;
+    --accent-m: #f76f4f;
+    --accent-green: #4fca8e;
+    --text: #e8e8f0;
+    --muted: #888899;
+    --blender-color: #e87d0d;
+    --mesh-color: #00b4d8;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sora', sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0e0e12 0%, #1a1a2e 50%, #0e0e12 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 40px 50px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(ellipse, rgba(79,142,247,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(ellipse, rgba(247,111,79,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-badge {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  header h1 {
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  header h1 span.b { color: var(--blender-color); }
+  header h1 span.m { color: var(--mesh-color); }
+
+  header p {
+    color: var(--muted);
+    font-size: 15px;
+    max-width: 540px;
+    margin: 0 auto;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    overflow-x: auto;
+  }
+
+  nav a {
+    padding: 16px 24px;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  nav a:hover { color: var(--text); }
+  nav a.blender { border-color: transparent; }
+  nav a.blender:hover { color: var(--blender-color); border-color: var(--blender-color); }
+  nav a.meshmixer:hover { color: var(--mesh-color); border-color: var(--mesh-color); }
+  nav a.tips:hover { color: var(--accent-green); border-color: var(--accent-green); }
+
+  /* MAIN */
+  main { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* SECTION HEADERS */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 60px 0 32px;
+  }
+
+  .section-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  .icon-blender { background: rgba(232,125,13,0.15); border: 1px solid rgba(232,125,13,0.3); }
+  .icon-mesh { background: rgba(0,180,216,0.15); border: 1px solid rgba(0,180,216,0.3); }
+  .icon-tips { background: rgba(79,202,142,0.15); border: 1px solid rgba(79,202,142,0.3); }
+
+  .section-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .section-header h2 .sub {
+    display: block;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    letter-spacing: 0px;
+    margin-top: 2px;
+  }
+
+  /* INTRO CARD */
+  .intro-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin: 40px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 600px) { .intro-card { grid-template-columns: 1fr; } }
+
+  .tool-pill {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+
+  .pill-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pill-title { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+  .pill-desc { font-size: 12px; color: var(--muted); }
+
+  /* STEP CARDS */
+  .steps { display: flex; flex-direction: column; gap: 16px; }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 28px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+
+  .step:hover { border-color: #3a3a5a; }
+
+  .step-num {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  .step-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    padding-right: 60px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .step-emoji { font-size: 18px; }
+
+  .step p {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #0a0a10;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-top: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: #c8d3ff;
+    line-height: 1.8;
+  }
+
+  .code-block .key {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 1px 8px;
+    font-size: 12px;
+    color: var(--text);
+    margin: 0 2px;
+  }
+
+  .code-block .comment {
+    color: #555577;
+  }
+
+  /* HIGHLIGHT BOXES */
+  .highlight {
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 14px;
+    font-size: 13px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .highlight.warning {
+    background: rgba(247,111,79,0.08);
+    border: 1px solid rgba(247,111,79,0.2);
+    color: #f7a07a;
+  }
+
+  .highlight.tip {
+    background: rgba(79,202,142,0.08);
+    border: 1px solid rgba(79,202,142,0.2);
+    color: #7addb0;
+  }
+
+  .highlight.info {
+    background: rgba(79,142,247,0.08);
+    border: 1px solid rgba(79,142,247,0.2);
+    color: #7aaef7;
+  }
+
+  /* VIDEO CARDS */
+  .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+  @media (max-width: 600px) { .video-grid { grid-template-columns: 1fr; } }
+
+  .video-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    display: block;
+    transition: all 0.2s;
+  }
+
+  .video-card:hover { border-color: #4a4a6a; transform: translateY(-2px); }
+
+  .video-thumb {
+    width: 100%;
+    aspect-ratio: 16/9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .video-thumb::after {
+    content: '▶';
+    position: absolute;
+    width: 48px; height: 48px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #111;
+    padding-left: 4px;
+  }
+
+  .thumb-blender { background: linear-gradient(135deg, #1a0f00, #3d2000); }
+  .thumb-mesh { background: linear-gradient(135deg, #001a2a, #003d5a); }
+  .thumb-prusa { background: linear-gradient(135deg, #0a1a0a, #1a3a1a); }
+  .thumb-gambody { background: linear-gradient(135deg, #1a001a, #3a003a); }
+
+  .video-info { padding: 14px 16px; }
+  .video-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.4; }
+  .video-meta { font-size: 11px; color: var(--muted); }
+  .video-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 6px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .tag-blender { background: rgba(232,125,13,0.2); color: var(--blender-color); }
+  .tag-mesh { background: rgba(0,180,216,0.2); color: var(--mesh-color); }
+
+  /* CONNECTOR TABLE */
+  .connector-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  @media (max-width: 600px) { .connector-grid { grid-template-columns: 1fr; } }
+
+  .connector-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+
+  .connector-icon { font-size: 28px; margin-bottom: 10px; }
+  .connector-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+  .connector-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .connector-use { font-size: 11px; margin-top: 8px; padding: 4px 10px; border-radius: 8px; display: inline-block; }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+
+  /* FINAL TIP */
+  .final-tip {
+    background: linear-gradient(135deg, rgba(79,202,142,0.05), rgba(79,142,247,0.05));
+    border: 1px solid rgba(79,202,142,0.2);
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    margin-top: 60px;
+  }
+
+  .final-tip h3 { font-size: 20px; margin-bottom: 10px; }
+  .final-tip p { color: var(--muted); font-size: 14px; max-width: 500px; margin: 0 auto; }
+
+  /* FLOW DIAGRAM */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 24px 0;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .flow-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    text-align: center;
+    flex-shrink: 0;
+    min-width: 100px;
+  }
+
+  .flow-item .fi-icon { font-size: 20px; margin-bottom: 4px; }
+  .flow-item .fi-label { color: var(--muted); }
+
+  .flow-arrow {
+    color: var(--border);
+    font-size: 20px;
+    flex-shrink: 0;
+    padding: 0 6px;
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-badge">3D Baskı Rehberi</div>
+  <h1>Model Parçalara Ayırma<br><span class="b">Blender</span> + <span class="m">Meshmixer</span></h1>
+  <p>Figür ve heykel modellerini boyama için parçalara bölme — adım adım tam rehber</p>
+</header>
+
+<nav>
+  <a href="#intro">Giriş</a>
+  <a href="#blender" class="blender">🟠 Blender</a>
+  <a href="#blender-boolean" class="blender">⚙️ Blender Boolean</a>
+  <a href="#meshmixer" class="meshmixer">🔵 Meshmixer</a>
+  <a href="#meshmixer-boolean" class="meshmixer">⚙️ Meshmixer Boolean</a>
+  <a href="#connectors">Bağlantılar</a>
+  <a href="#videos">Videolar</a>
+  <a href="#tips" class="tips">İpuçları</a>
+</nav>
+
+<main>
+
+  <!-- INTRO -->
+  <section id="intro">
+    <div class="section-header">
+      <div class="section-icon icon-tips">🎯</div>
+      <h2>Neden Parçalara Ayırıyoruz?
+        <span class="sub">Figürleri parçalı basmak spray boyama workflow'u için ideal</span>
+      </h2>
+    </div>
+
+    <div class="intro-card">
+      <div class="tool-pill">
+        <div class="pill-dot" style="background:var(--blender-color)"></div>
+        <div>
+          <div class="pill-title">Blender</div>
+          <div class="pill-desc">Bisect Tool ile hassas açılı kesimler. Karmaşık geometrilerde güçlü.</div>
+        </div>
+      </div>
+      <div class="tool-pill">
+        <div class="pill-dot" style="background:var(--mesh-color)"></div>
+        <div>
+          <div class="pill-title">Meshmixer</div>
+          <div class="pill-desc">Plane Cut ile hızlı ve sezgisel bölme. Yeni başlayanlar için daha kolay.</div>
+        </div>
+      </div>
+      <div class="tool-pill">
+        <div class="pill-dot" style="background:var(--accent-green)"></div>
+        <div>
+          <div class="pill-title">Spray Boyama Avantajı</div>
+          <div class="pill-desc">Her parçayı ayrı tut, her açıdan boyayabilirsin. Birleştirirken boya sınırları gizlenir.</div>
+        </div>
+      </div>
+      <div class="tool-pill">
+        <div class="pill-dot" style="background:#a78bfa"></div>
+        <div>
+          <div class="pill-title">Pin / Snap Sistemi</div>
+          <div class="pill-desc">Kesimde pim yuvası ekle → baskı sonrası parçalar kilitlenir, hizalama kolay.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-item"><div class="fi-icon">📥</div><div class="fi-label">STL İndir</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="fi-icon">✂️</div><div class="fi-label">Blender / Meshmixer'da Kes</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="fi-icon">📌</div><div class="fi-label">Pim Ekle</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="fi-icon">🖨️</div><div class="fi-label">Ayrı Bas</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="fi-icon">🎨</div><div class="fi-label">Spray Boya</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item"><div class="fi-icon">🔩</div><div class="fi-label">Birleştir</div></div>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- BLENDER -->
+  <section id="blender">
+    <div class="section-header">
+      <div class="section-icon icon-blender">🟠</div>
+      <h2>Blender — Bisect Tool
+        <span class="sub">Edit Mode → Bisect → Separate (P)</span>
+      </h2>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">ADIM 01</div>
+        <div class="step-title"><span class="step-emoji">📥</span> STL'i İçe Aktar</div>
+        <p>Blender'ı aç. Varsayılan küpü sil (<span style="font-family:monospace;color:#c8d3ff">X → Delete</span>). Ardından modeli içe aktar.</p>
+        <div class="code-block">
+          <span class="comment"># Menü yolu:</span><br>
+          File → Import → STL (.stl)<br>
+          <span class="comment"># veya OBJ dosyası için:</span><br>
+          File → Import → Wavefront (.obj)
+        </div>
+        <div class="highlight tip">💡 Model çok küçük görünüyorsa klavyede <span class="key">Numpad .</span> tuşuna bas — kamerا modele odaklanır.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 02</div>
+        <div class="step-title"><span class="step-emoji">✏️</span> Edit Mode'a Geç</div>
+        <p>Modele tıkla (seç), ardından <strong>Tab</strong> tuşuna bas. Edit Mode'a geçersin — mesh noktaları görünür hale gelir.</p>
+        <div class="code-block">
+          <span class="key">Tab</span> → Edit Mode'a geç<br>
+          <span class="key">A</span> → Tüm mesh'i seç (tüm noktalar seçili olmalı)<br>
+          <span class="comment"># Noktalar turuncu görünüyorsa seçili demektir</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 03</div>
+        <div class="step-title"><span class="step-emoji">✂️</span> Bisect Tool'u Etkinleştir</div>
+        <p>Sol paneldeki araç çubuğunda <strong>Knife</strong> aracını bul. Üzerine <strong>uzun tıkla</strong> (hold) → açılan menüde <strong>Bisect</strong>'i seç.</p>
+        <div class="code-block">
+          <span class="comment"># Sol panelde Knife aracına uzun tıkla →</span><br>
+          Bisect seç<br><br>
+          <span class="comment"># Alternatif kısayol:</span><br>
+          <span class="key">Shift</span> + <span class="key">8</span> (bazı versiyonlarda)
+        </div>
+        <div class="highlight info">ℹ️ Bisect aracı, modeli tam düz bir düzlemle keser. Knife'tan farklı olarak kapalı bir yüzey oluşturur.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 04</div>
+        <div class="step-title"><span class="step-emoji">📐</span> Kesim Çizgisini Çiz</div>
+        <p>3D viewport'ta <strong>tıklayıp sürükle</strong> — modelin üzerinde bir kesim çizgisi belirir. Bırak.</p>
+        <div class="code-block">
+          <span class="comment"># Sol alt köşede "Bisect" paneli açılır:</span><br>
+          ✅ Fill → Kesimleri kapalı yüzey yap (işaretle!)<br>
+          Clear Inner → Bir tarafı sil<br>
+          Clear Outer → Diğer tarafı sil<br>
+          <span class="comment"># İkisi de işaretli değilse her iki parça kalır</span>
+        </div>
+        <div class="highlight warning">⚠️ "Fill" seçeneğini mutlaka işaretle! Yoksa kesimdeki yüzey açık kalır, slicer'da sorun çıkar.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 05</div>
+        <div class="step-title"><span class="step-emoji">🔀</span> İki Parçayı Ayır (Separate)</div>
+        <p>Kesim yapıldı ama parçalar hâlâ aynı objede. Önce bir parçanın mesh'ini seç, sonra ayır.</p>
+        <div class="code-block">
+          <span class="key">V</span> → Kesim noktalarını "rip" et (parçaları ayırır)<br><br>
+          <span class="comment"># Sonra bir parçayı seç:</span><br>
+          <span class="key">Ctrl</span> + <span class="key">L</span> → Bağlı mesh'i seç<br><br>
+          <span class="comment"># Ayrı objeye taşı:</span><br>
+          <span class="key">P</span> → "Selection" seç<br><br>
+          <span class="key">Tab</span> → Object Mode'a dön
+        </div>
+        <div class="highlight tip">💡 Sağ panelde (Outliner) artık iki ayrı obje görürsün. Her birini ayrı STL olarak export edebilirsin.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 06</div>
+        <div class="step-title"><span class="step-emoji">📤</span> Her Parçayı Ayrı Export Et</div>
+        <p>Her objeyi ayrı ayrı seç, export ederken <strong>Selection Only</strong> kutusunu işaretle.</p>
+        <div class="code-block">
+          <span class="comment"># Bir parçaya tıkla (seç):</span><br>
+          File → Export → STL<br>
+          ✅ "Selection Only" kutusunu işaretle<br>
+          Kaydet → parça_1.stl<br><br>
+          <span class="comment"># Diğer parça için tekrarla:</span><br>
+          parça_2.stl
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">BONUS</div>
+        <div class="step-title"><span class="step-emoji">📌</span> Blender'da Pim Yuvası Ekle (Boolean)</div>
+        <p>Parçaların hizalanması için pim yuvası eklenebilir. Silindir obje oluşturup Boolean Difference uygularsın.</p>
+        <div class="code-block">
+          <span class="comment"># Silindir ekle:</span><br>
+          <span class="key">Shift</span> + <span class="key">A</span> → Mesh → Cylinder<br>
+          Boyutunu ayarla (örn: çap 4mm, yükseklik 8mm)<br><br>
+          <span class="comment"># Boolean Difference (alt parçaya):</span><br>
+          Alt parçayı seç → Properties → Modifiers<br>
+          "+" → Boolean → Operation: Difference<br>
+          Object: Cylinder → Apply
+        </div>
+        <div class="highlight info">ℹ️ Üst parçaya silindir ekle (Union), alt parçadan çıkar (Difference) → birbirlerine tam oturur.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- BLENDER BOOLEAN -->
+  <section id="blender-boolean">
+    <div class="section-header">
+      <div class="section-icon icon-blender">⚙️</div>
+      <h2>Blender — Boolean Modifier
+        <span class="sub">Union · Difference · Intersect ile şekil birleştirme ve çıkarma</span>
+      </h2>
+    </div>
+
+    <div class="highlight info" style="margin-bottom:24px">
+      ℹ️ <strong>Boolean Modifier nedir?</strong> İki 3D objeyi matematiksel olarak birleştirir, çıkarır veya kesişimini alır. Pim yuvası, snap fit, kilit kanalı gibi her türlü bağlantı elemanını bu yöntemle yaparsın.
+    </div>
+
+    <div class="connector-grid" style="margin-bottom:28px">
+      <div class="connector-card">
+        <div class="connector-icon">➕</div>
+        <div class="connector-name">Union</div>
+        <div class="connector-desc">İki objeyi tek bir objeye birleştirir. Pim çıkıntısı eklemek için kullanılır.</div>
+        <div class="connector-use" style="background:rgba(79,202,142,0.1);color:var(--accent-green)">Üst parça + pim</div>
+      </div>
+      <div class="connector-card">
+        <div class="connector-icon">➖</div>
+        <div class="connector-name">Difference</div>
+        <div class="connector-desc">Bir objeden diğerini çıkarır. Pim yuvası (delik) açmak için kullanılır.</div>
+        <div class="connector-use" style="background:rgba(247,111,79,0.1);color:var(--accent-m)">Alt parça − pim = yuva</div>
+      </div>
+      <div class="connector-card">
+        <div class="connector-icon">✖️</div>
+        <div class="connector-name">Intersect</div>
+        <div class="connector-desc">Sadece iki objenin kesiştiği hacmi bırakır. Karmaşık şekil kesmede kullanılır.</div>
+        <div class="connector-use" style="background:rgba(79,142,247,0.1);color:var(--accent-b)">İleri seviye kesimler</div>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">ADIM 01</div>
+        <div class="step-title"><span class="step-emoji">🔵</span> Silindir (Pim) Objesi Oluştur</div>
+        <p>Kesim yaptıktan sonra, Object Mode'dayken eklem noktasına bir silindir ekle. Bu silindir hem pim hem de yuva kalıbı olarak kullanılacak.</p>
+        <div class="code-block">
+          <span class="comment"># Boş alana tıkla (hiçbir şey seçili olmasın)</span><br>
+          <span class="key">Shift</span> + <span class="key">A</span> → Mesh → Cylinder<br><br>
+          <span class="comment"># Silindir boyutunu ayarla (S = Scale):</span><br>
+          <span class="key">S</span> → <span class="key">X</span> → 0.004 Enter <span class="comment">(4mm çap)</span><br>
+          <span class="key">S</span> → <span class="key">Z</span> → 0.008 Enter <span class="comment">(8mm uzunluk)</span><br><br>
+          <span class="comment"># Konumunu eklem noktasına taşı (G = Grab):</span><br>
+          <span class="key">G</span> → <span class="key">Z</span> → değer gir → Enter
+        </div>
+        <div class="highlight tip">💡 Silindirin <strong>yarısı üst parçada, yarısı alt parçada</strong> olacak şekilde konumlandır. Tam kesim çizgisi üzerinde ortala.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 02</div>
+        <div class="step-title"><span class="step-emoji">➕</span> Üst Parçaya Union Uygula (Pim Çıkıntısı)</div>
+        <p>Önce üst parçaya silindir ekliyoruz — bu parçada pim <strong>dışarı çıkacak</strong>.</p>
+        <div class="code-block">
+          <span class="comment"># 1. Silindiri kopyala (orijinalini koru):</span><br>
+          Silindire tıkla → <span class="key">Shift</span> + <span class="key">D</span> → <span class="key">Esc</span><br>
+          <span class="comment"># (yerinde kopyalandı)</span><br><br>
+          <span class="comment"># 2. Üst parçayı seç:</span><br>
+          Outliner'da üst parçaya tıkla<br><br>
+          <span class="comment"># 3. Properties paneli → Modifier Properties (🔧):</span><br>
+          "Add Modifier" → Boolean<br><br>
+          <span class="comment"># 4. Ayarlar:</span><br>
+          Operation → <strong>Union</strong><br>
+          Object → Silindir kopyasını seç<br><br>
+          <span class="comment"># 5. Uygula:</span><br>
+          "Apply" butonuna tıkla<br><br>
+          <span class="comment"># 6. Silindir kopyasını sil (görünmez yap veya sil):</span><br>
+          Silindir kopyasına tıkla → <span class="key">H</span> (gizle) veya <span class="key">X</span> (sil)
+        </div>
+        <div class="highlight tip">💡 Üst parçada artık silindir şeklinde bir <strong>çıkıntı (pim)</strong> var.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 03</div>
+        <div class="step-title"><span class="step-emoji">➖</span> Alt Parçaya Difference Uygula (Yuva/Delik)</div>
+        <p>Şimdi orijinal silindiri alt parçadan çıkarıyoruz — bu parçada pimin oturacağı <strong>yuva açılacak</strong>.</p>
+        <div class="code-block">
+          <span class="comment"># 1. Alt parçayı seç:</span><br>
+          Outliner'da alt parçaya tıkla<br><br>
+          <span class="comment"># 2. Modifier Properties (🔧):</span><br>
+          "Add Modifier" → Boolean<br><br>
+          <span class="comment"># 3. Ayarlar:</span><br>
+          Operation → <strong>Difference</strong><br>
+          Object → Orijinal silindiri seç<br><br>
+          <span class="comment"># 4. Uygula:</span><br>
+          "Apply" butonuna tıkla<br><br>
+          <span class="comment"># 5. Orijinal silindiri sil:</span><br>
+          Silindire tıkla → <span class="key">X</span> → Delete
+        </div>
+        <div class="highlight tip">💡 Alt parçada artık pimin tam oturacağı <strong>silindirik yuva</strong> açıldı.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 04</div>
+        <div class="step-title"><span class="step-emoji">📏</span> Tolerans Ayarı — Kritik!</div>
+        <p>Pim ve yuva aynı boyuttaysa baskıda birbirine girmez. Yuva için silindiri biraz büyüt.</p>
+        <div class="code-block">
+          <span class="comment"># Difference işleminden ÖNCE silindiri büyüt:</span><br>
+          Silindiri seç → <span class="key">S</span> → 1.05 Enter<br>
+          <span class="comment"># %5 büyüttük → yuva pimden 0.2mm büyük olur</span><br><br>
+          <span class="comment"># Tolerans rehberi:</span><br>
+          Sıkı geçme (press-fit): +0.1mm<br>
+          Normal geçme:           +0.2mm<br>
+          Gevşek (kolayca çıkar): +0.3mm
+        </div>
+        <div class="highlight warning">⚠️ Tolerans olmadan pim yuvaya girmez! İlk baskıda +0.2mm ile başla, gerekirse ayarla.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 05</div>
+        <div class="step-title"><span class="step-emoji">🔢</span> Birden Fazla Pim Ekle</div>
+        <p>Büyük yüzeylerde 2–3 pim olması hem hizalamayı hem de dayanıklılığı artırır.</p>
+        <div class="code-block">
+          <span class="comment"># Silindiri çoğalt (Array Modifier ile):</span><br>
+          Silindiri seç → Modifier → Array<br>
+          Count: 2 (veya 3)<br>
+          X offset: eklemler arası mesafe<br>
+          Apply → sonra Boolean işlemlerini tekrarla<br><br>
+          <span class="comment"># Veya manuel: Shift+D ile kopyala, konumla</span><br>
+          <span class="key">Shift</span> + <span class="key">D</span> → <span class="key">X</span> → mesafe → Enter
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 06</div>
+        <div class="step-title"><span class="step-emoji">🔍</span> Sonucu Kontrol Et</div>
+        <p>Boolean sonrası mesh'i kontrol et — bazı durumlarda N-gon veya hatalı yüzey oluşabilir.</p>
+        <div class="code-block">
+          <span class="comment"># Edit Mode'da hata kontrolü:</span><br>
+          <span class="key">Tab</span> → Edit Mode<br>
+          Overlay → Statistics'i aç<br>
+          <span class="comment"># Kırmızı kenarlar = sorunlu alan</span><br><br>
+          <span class="comment"># Mesh düzeltme (Blender 3D Print Toolbox):</span><br>
+          Preferences → Add-ons → "3D Print Toolbox" etkinleştir<br>
+          N Panel → 3D Print → Check All → Clean Up
+        </div>
+        <div class="highlight tip">💡 Slicer'da "Non-Manifold" hatası alırsan geri dön, Blender'da mesh onar, tekrar export et.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- MESHMIXER -->
+  <section id="meshmixer">
+    <div class="section-header">
+      <div class="section-icon icon-mesh">🔵</div>
+      <h2>Meshmixer — Plane Cut
+        <span class="sub">Edit → Plane Cut → Slice → Separate Shells</span>
+      </h2>
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">ADIM 01</div>
+        <div class="step-title"><span class="step-emoji">📥</span> Modeli İçe Aktar</div>
+        <p>Meshmixer'ı aç. Sol üstteki <strong>Import</strong> butonuna tıkla, STL veya OBJ dosyasını seç.</p>
+        <div class="code-block">
+          Import → STL / OBJ dosyasını seç<br>
+          <span class="comment"># Model ekranda belirir</span><br><br>
+          <span class="comment"># Görünümü döndür: Sol tıkla + sürükle</span><br>
+          <span class="comment"># Zoom: Scroll</span><br>
+          <span class="comment"># Pan: Orta tık + sürükle</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 02</div>
+        <div class="step-title"><span class="step-emoji">✂️</span> Plane Cut Aracını Aç</div>
+        <p>Sol paneldeki <strong>Edit</strong> menüsüne tıkla → <strong>Plane Cut</strong>'ı seç. Ekranda renkli bir düzlem belirir.</p>
+        <div class="code-block">
+          Edit → Plane Cut<br><br>
+          <span class="comment"># Kırmızı/yeşil/mavi oklar: düzlemi taşı</span><br>
+          <span class="comment"># Küre gizmo: düzlemi döndür</span>
+        </div>
+        <div class="highlight tip">💡 Düzlemi model üzerinde istediğin noktaya sürükle. Eklem (joint) veya doğal sınırları bul.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 03</div>
+        <div class="step-title"><span class="step-emoji">⚙️</span> Cut Type Ayarla: Slice</div>
+        <p>Sol panelde (Plane Cut menüsünde) <strong>Cut Type</strong> açılır menüsünü bul.</p>
+        <div class="code-block">
+          Cut Type → <strong>Slice (Keep Both)</strong> seç<br>
+          <span class="comment"># Bu seçenek her iki tarafı da korur</span><br><br>
+          Fill Type → Erase Fill <span class="comment">(yüzeyi kapatır)</span><br><br>
+          <span class="comment"># Ayarlar tamam →</span><br>
+          "Accept" butonuna tıkla
+        </div>
+        <div class="highlight warning">⚠️ "Cut" seçersen bir tarafı siler! "Slice (Keep Both)" seçmeyi unutma.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 04</div>
+        <div class="step-title"><span class="step-emoji">🔀</span> Shell'leri Ayır</div>
+        <p>Kesim yapıldı ama parçalar hâlâ tek obje. <strong>Edit → Separate Shells</strong> ile ayır.</p>
+        <div class="code-block">
+          Edit → Separate Shells<br><br>
+          <span class="comment"># Sağda Object Browser açılır:</span><br>
+          Object1 (üst parça)<br>
+          Object2 (alt parça)<br>
+          <span class="comment"># Her biri artık ayrı obje</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 05</div>
+        <div class="step-title"><span class="step-emoji">📌</span> Hizalama Pimi Ekle (Silindir Yöntemi)</div>
+        <p>Prusa'nın önerdiği klasik yöntem: silindir primitif ekleyip Boolean ile pim yuvası oluşturursun.</p>
+        <div class="code-block">
+          <span class="comment"># 1. Silindir ekle:</span><br>
+          Meshmix (sol panel) → Primitives → Cylinder<br>
+          Modelin kesim yüzeyine sürükle<br><br>
+          <span class="comment"># 2. Boyutunu ayarla (ok gizmo ile)</span><br>
+          Örn: çap ~4mm, uzunluk ~8mm<br><br>
+          <span class="comment"># 3. Drop Solid menüsünde:</span><br>
+          Composition mode → "Create New Object"<br>
+          Accept<br><br>
+          <span class="comment"># 4. Silindir'i 3 kopyala (Shift+C)</span><br>
+          <span class="comment"># 5. Üst parça + silindir → Boolean Union</span><br>
+          <span class="comment"># 6. Alt parça + silindir → Boolean Difference</span>
+        </div>
+        <div class="highlight tip">💡 Sonuç: Üst parçada pim çıkıntısı, alt parçada yuva. Birbirlerine kilitlenerek oturur.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 06</div>
+        <div class="step-title"><span class="step-emoji">📤</span> Her Parçayı Export Et</div>
+        <p>Object Browser'da her parçayı sağ tıkla → Export → STL olarak kaydet.</p>
+        <div class="code-block">
+          Object Browser → Object1 → sağ tık → Export<br>
+          → parça_ust.stl olarak kaydet<br><br>
+          Object Browser → Object2 → sağ tık → Export<br>
+          → parça_alt.stl olarak kaydet
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- MESHMIXER BOOLEAN -->
+  <section id="meshmixer-boolean">
+    <div class="section-header">
+      <div class="section-icon icon-mesh">⚙️</div>
+      <h2>Meshmixer — Boolean İşlemleri
+        <span class="sub">Boolean Union · Boolean Difference ile pim ve yuva oluşturma</span>
+      </h2>
+    </div>
+
+    <div class="highlight info" style="margin-bottom:24px">
+      ℹ️ Meshmixer'da Boolean işlemleri <strong>Edit → Boolean</strong> menüsü altında. Blender'daki modifier sisteminden farklı olarak burada iki objeyi seçip işlemi tek adımda uygularsın.
+    </div>
+
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">ADIM 01</div>
+        <div class="step-title"><span class="step-emoji">🔵</span> Pim Silindirini Yerleştir</div>
+        <p>Kesim tamamlandıktan sonra Object Browser'da parçalar görünür. Şimdi pim olarak kullanacağın silindiri ekle.</p>
+        <div class="code-block">
+          <span class="comment"># Meshmix panelini aç (sol üst):</span><br>
+          Meshmix → Primitives bölümü → Cylinder'ı bul<br>
+          Kesim yüzeyinin üzerine sürükle ve bırak<br><br>
+          <span class="comment"># Boyutlandır (gizmo okları ile):</span><br>
+          Çap: ~4mm (X ve Y okları)<br>
+          Uzunluk: ~10mm (Z oku)<br>
+          <span class="comment"># Yarısı üst, yarısı alt parçada olacak şekilde konumla</span><br><br>
+          <span class="comment"># Drop Solid menüsünde MUTLAKA:</span><br>
+          Composition → <strong>Create New Object</strong> seç<br>
+          Accept
+        </div>
+        <div class="highlight warning">⚠️ "Create New Object" seçmezsen silindir parçayla birleşir, Boolean işlemi için ayrı obje olmaz!</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 02</div>
+        <div class="step-title"><span class="step-emoji">📋</span> Silindiri Kopyala</div>
+        <p>Union ve Difference için iki ayrı silindir kopyasına ihtiyacın var — biri pim, biri yuva kalıbı.</p>
+        <div class="code-block">
+          <span class="comment"># Object Browser'da silindiri seç:</span><br>
+          Object Browser → Cylinder'a tıkla<br><br>
+          <span class="comment"># Kopyala:</span><br>
+          <span class="key">Shift</span> + <span class="key">C</span> <span class="comment">(veya Edit → Duplicate)</span><br>
+          <span class="comment"># Artık Cylinder ve Cylinder_copy var</span><br><br>
+          <span class="comment"># Tolerans için kopyayı biraz büyüt:</span><br>
+          Cylinder_copy'yi seç → Edit → Transform<br>
+          Scale X ve Y: 1.05 <span class="comment">(5% büyük = ~0.2mm tolerans)</span>
+        </div>
+        <div class="highlight tip">💡 Orijinal silindir → Union (üst parçaya pim). Büyütülmüş kopya → Difference (alt parçaya yuva).</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 03</div>
+        <div class="step-title"><span class="step-emoji">➕</span> Boolean Union — Üst Parçaya Pim Ekle</div>
+        <p>Üst parça + orijinal silindir seçilir → Union uygulanır → pim çıkıntısı oluşur.</p>
+        <div class="code-block">
+          <span class="comment"># 1. Üst parçayı seç:</span><br>
+          Object Browser → üst parçaya tıkla<br><br>
+          <span class="comment"># 2. Silindiri de seç (Ctrl+tık):</span><br>
+          <span class="key">Ctrl</span> + tıkla → Cylinder (orijinal)<br><br>
+          <span class="comment"># 3. Boolean Union uygula:</span><br>
+          Edit → Boolean → Union<br><br>
+          <span class="comment"># 4. Ayarlar penceresinde:</span><br>
+          ✅ Use Intersection Curves işaretle<br>
+          ✅ Auto-Reduce Result işaretini KALDIR<br>
+          Target Edge Scale: 5 (daha temiz mesh)<br>
+          Accept<br><br>
+          <span class="comment"># Sonuç: üst parçada silindir çıkıntısı (pim) var</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 04</div>
+        <div class="step-title"><span class="step-emoji">➖</span> Boolean Difference — Alt Parçaya Yuva Aç</div>
+        <p>Alt parça + büyütülmüş silindir kopya seçilir → Difference uygulanır → pim yuvası açılır.</p>
+        <div class="code-block">
+          <span class="comment"># 1. Alt parçayı seç:</span><br>
+          Object Browser → alt parçaya tıkla<br><br>
+          <span class="comment"># 2. Büyütülmüş kopyayı da seç:</span><br>
+          <span class="key">Ctrl</span> + tıkla → Cylinder_copy<br><br>
+          <span class="comment"># 3. Boolean Difference uygula:</span><br>
+          Edit → Boolean → Difference<br><br>
+          <span class="comment"># 4. Ayarlar:</span><br>
+          ✅ Use Intersection Curves işaretle<br>
+          ✅ Auto-Reduce Result işaretini KALDIR<br>
+          Accept<br><br>
+          <span class="comment"># Sonuç: alt parçada silindirik yuva açıldı</span>
+        </div>
+        <div class="highlight tip">💡 Şimdi üst parçanın pimi alt parçanın yuvasına tam oturur. Tolerans sayesinde kolayca girer.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 05</div>
+        <div class="step-title"><span class="step-emoji">🔍</span> Mesh Onar (Gerekirse)</div>
+        <p>Boolean sonrası mesh'te küçük hatalar oluşabilir. Meshmixer'ın Analysis aracıyla kontrol et.</p>
+        <div class="code-block">
+          <span class="comment"># Hata kontrolü:</span><br>
+          Analysis → Inspector<br>
+          Kırmızı/mavi noktalar = sorunlu alan<br><br>
+          <span class="comment"># Otomatik onar:</span><br>
+          "Auto Repair All" butonuna tıkla<br><br>
+          <span class="comment"># Manuel onar:</span><br>
+          Sorunlu noktaya tıkla → "Repair" seç
+        </div>
+        <div class="highlight info">ℹ️ Boolean sonrası Inspector'da hata yoksa doğrudan export edebilirsin.</div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">ADIM 06</div>
+        <div class="step-title"><span class="step-emoji">📤</span> Export Et ve Slicer'a Gönder</div>
+        <p>Her parça ayrı ayrı seçilip STL olarak kaydedilir. Slicer'da toleransı test bas.</p>
+        <div class="code-block">
+          <span class="comment"># Üst parçayı export:</span><br>
+          Object Browser → üst parça seç<br>
+          File → Export → STL → parça_ust_pimli.stl<br><br>
+          <span class="comment"># Alt parçayı export:</span><br>
+          Object Browser → alt parça seç<br>
+          File → Export → STL → parça_alt_yuva.stl<br><br>
+          <span class="comment"># Slicer'da tolerans testi:</span><br>
+          Önce sadece eklem bölgesini küçük ölçekte bas<br>
+          Pim yuvaya giriyorsa → tam ölçek baskıya geç
+        </div>
+        <div class="highlight warning">⚠️ Büyük figürü basmadan önce toleransı test et! Aksi halde saatlik baskı çöpe gidebilir.</div>
+      </div>
+
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- CONNECTORS -->
+  <section id="connectors">
+    <div class="section-header">
+      <div class="section-icon icon-tips">🔩</div>
+      <h2>Bağlantı Tipleri
+        <span class="sub">Hangi connector ne zaman kullanılır?</span>
+      </h2>
+    </div>
+
+    <div class="connector-grid">
+      <div class="connector-card">
+        <div class="connector-icon">🔌</div>
+        <div class="connector-name">Plug / Dowel</div>
+        <div class="connector-desc">Silindirik pim. Bir tarafa çıkıntı, diğerine delik. Yapıştırma gerektirmez ama gevşeyebilir.</div>
+        <div class="connector-use" style="background:rgba(79,142,247,0.1);color:var(--accent-b)">Kol, bacak eklemleri</div>
+      </div>
+      <div class="connector-card">
+        <div class="connector-icon">🔗</div>
+        <div class="connector-name">Snap Fit</div>
+        <div class="connector-desc">Çıt-çıt sistemi. Videodaki figürde bu kullanılıyor. Kilitlenir, sökülür.</div>
+        <div class="connector-use" style="background:rgba(247,111,79,0.1);color:var(--accent-m)">Tekrar sökülen parçalar</div>
+      </div>
+      <div class="connector-card">
+        <div class="connector-icon">🪤</div>
+        <div class="connector-name">Dovetail</div>
+        <div class="connector-desc">Kırlangıç kuyruğu. Hem hizalar hem tutar. Gövde-kaide bağlantısı için ideal.</div>
+        <div class="connector-use" style="background:rgba(79,202,142,0.1);color:var(--accent-green)">Düz yüzeyler / kaide</div>
+      </div>
+    </div>
+
+    <div class="highlight info" style="margin-top:20px">
+      ℹ️ <strong>Bambu Studio / Orca Slicer'da</strong> bunları otomatik ekleyebilirsin: Model seç → <span style="font-family:monospace">C</span> → Cut Tool → "Add Connectors" → tip seç. Blender veya Meshmixer'a gerek kalmaz.
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- VIDEOS -->
+  <section id="videos">
+    <div class="section-header">
+      <div class="section-icon icon-blender">📺</div>
+      <h2>Önerilen Videolar
+        <span class="sub">Adım adım görmek isteyenler için</span>
+      </h2>
+    </div>
+
+    <div class="video-grid">
+      <a href="https://www.youtube.com/watch?v=_-U8u5hK_D4" target="_blank" class="video-card">
+        <div class="video-thumb thumb-blender">🟠</div>
+        <div class="video-info">
+          <div class="video-title">Blender: Split STL with Bisect Tool (Beginner)</div>
+          <div class="video-meta">YouTube · Dec 2025</div>
+          <div class="video-tag tag-blender">BLENDER</div>
+        </div>
+      </a>
+
+      <a href="https://www.youtube.com/watch?v=PfIQxnRXNSo" target="_blank" class="video-card">
+        <div class="video-thumb thumb-blender">🔶</div>
+        <div class="video-info">
+          <div class="video-title">How to Split Models in Blender | Bisect Tool</div>
+          <div class="video-meta">YouTube · Kitbashing odaklı</div>
+          <div class="video-tag tag-blender">BLENDER</div>
+        </div>
+      </a>
+
+      <a href="https://www.youtube.com/watch?v=IUd5Wk5pyLA" target="_blank" class="video-card">
+        <div class="video-thumb thumb-mesh">🔵</div>
+        <div class="video-info">
+          <div class="video-title">How to use Meshmixer: Break a model in parts</div>
+          <div class="video-meta">YouTube · Prusa resmi</div>
+          <div class="video-tag tag-mesh">MESHMIXER</div>
+        </div>
+      </a>
+
+      <a href="https://www.youtube.com/watch?v=T_zPoiZUeks" target="_blank" class="video-card">
+        <div class="video-thumb thumb-prusa">🟢</div>
+        <div class="video-info">
+          <div class="video-title">Meshmixer: Model Bölme + Pim Ekleme (TR)</div>
+          <div class="video-meta">YouTube · Türkçe anlatım</div>
+          <div class="video-tag tag-mesh">MESHMIXER · TÜRKÇE</div>
+        </div>
+      </a>
+
+      <a href="https://www.youtube.com/watch?v=sLDTpqpTV9s" target="_blank" class="video-card">
+        <div class="video-thumb thumb-gambody">🟣</div>
+        <div class="video-info">
+          <div class="video-title">Bambu Studio: Cut with Peg & Hole Connectors</div>
+          <div class="video-meta">YouTube · Aug 2023</div>
+          <div class="video-tag tag-blender" style="background:rgba(168,139,250,0.2);color:#c4b5fd">BAMBU STUDIO</div>
+        </div>
+      </a>
+
+      <a href="https://www.youtube.com/watch?v=nq2FLDSzhPY" target="_blank" class="video-card">
+        <div class="video-thumb thumb-gambody" style="background:linear-gradient(135deg,#1a0a2e,#3a1a5e)">🔮</div>
+        <div class="video-info">
+          <div class="video-title">Orca Slicer: Cut + Snap Connector Tutorial</div>
+          <div class="video-meta">YouTube · Feb 2025</div>
+          <div class="video-tag tag-blender" style="background:rgba(168,139,250,0.2);color:#c4b5fd">ORCA SLICER</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <hr class="divider">
+
+  <!-- TIPS -->
+  <section id="tips">
+    <div class="section-header">
+      <div class="section-icon icon-tips">✨</div>
+      <h2>Spray Boyama için İpuçları
+        <span class="sub">Parçalı baskıyı boyamaya hazırlarken dikkat et</span>
+      </h2>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-title"><span class="step-emoji">📍</span> Kesim Noktasını Akıllı Seç</div>
+        <p>Doğal eklem noktalarından kes: omuz, diz, bel, boyun. Bu noktalardaki kesim çizgisi montaj sonrası görünmez. Düz yüzeylerden kes — eğri kesimler daha zor yapışır.</p>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-emoji">🎨</span> Boya Önce, Yapıştır Sonra</div>
+        <p>Her parçayı ayrı ayrı spray ile boya. Kuruttuktan sonra birleştir. Böylece eklem kıvrımlarına kadar boya ulaşır — monte edilmiş halde boyarsan o kısımlar ham kalır.</p>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-emoji">📏</span> Tolerans Bırak</div>
+        <p>Pim/yuva oluştururken slicer'dan önce 0.2–0.3mm tolerans ekle. Aksi takdirde parçalar birbirine oturmaz. Bambu Studio'da connector eklerken "Tolerance" değerini 0.2 olarak ayarla.</p>
+      </div>
+      <div class="step">
+        <div class="step-title"><span class="step-emoji">🔧</span> Önce Test Et</div>
+        <p>Büyük figürü basmadan önce sadece eklem bölgesini küçük ölçekte test bas. Pim/yuva uyumu iyi mi kontrol et, gerekirse toleransı ayarla, sonra tam ölçekte bas.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="final-tip">
+    <h3>🚀 Tavsiye: Başlangıç için Orca Slicer</h3>
+    <p>Blender ve Meshmixer daha fazla kontrol sunar ama öğrenme eğrisi var. <strong>Hızlı başlamak için</strong> Orca Slicer'ın dahili Cut Tool'u (C tuşu) kullan — connector ekleme dahil her şey tek arayüzde.</p>
+  </div>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logos">
+      <div class="footer-logo-item">
+        <div class="footer-logo-circle" style="background:linear-gradient(135deg,#e87d0d,#f7a050)">🎨</div>
+        <div>
+          <div class="footer-name">resimkulubu</div>
+          <a href="https://github.com/resimkulubu" target="_blank" class="footer-link">github.com/resimkulubu</a>
+        </div>
+      </div>
+      <div class="footer-divider-vert"></div>
+      <div class="footer-logo-item">
+        <div class="footer-logo-circle" style="background:linear-gradient(135deg,#00b4d8,#4fca8e)">🌿</div>
+        <div>
+          <div class="footer-name">Green3DLab</div>
+          <div class="footer-sub">3D Baskı &amp; Eğitim</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copy">
+      Bu rehber <strong>resimkulubu</strong> &amp; <strong>Green3DLab</strong> iş birliğiyle hazırlanmıştır.<br>
+      Serbestçe paylaşılabilir — kaynak gösterilmesi rica olunur.
+    </div>
+  </div>
+</footer>
+
+<style>
+footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 48px 24px;
+  margin-top: 60px;
+}
+.footer-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+.footer-logos {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.footer-logo-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.footer-logo-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.footer-name {
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+  letter-spacing: -0.3px;
+  text-align: left;
+}
+.footer-link {
+  font-size: 12px;
+  color: var(--accent-b);
+  text-decoration: none;
+  font-family: 'Space Mono', monospace;
+}
+.footer-link:hover { text-decoration: underline; }
+.footer-sub {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: left;
+}
+.footer-divider-vert {
+  width: 1px;
+  height: 48px;
+  background: var(--border);
+}
+.footer-copy {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.8;
+  max-width: 480px;
+}
+.footer-copy strong { color: var(--text); }
+@media (max-width: 500px) {
+  .footer-divider-vert { display: none; }
+}
+</style>
+
+</body>
+</html>
